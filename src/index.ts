@@ -1,43 +1,25 @@
+import NativeEventEmitter from 'events';
+
 type Listener<T, Event extends keyof T> = (
   value: T[Event]
 ) => void | Promise<void>;
 
-export class EventEmitter<T extends object> {
-  private readonly listeners: Partial<
-    {
-      [key in keyof T]: (Listener<T, key>)[];
-    }
-  > = {};
+export class EventEmitter<T extends { [key: string]: any }> {
+  private readonly eventemitter = new NativeEventEmitter();
 
-  countListeners(): number {
-    let sum = 0;
-    for (const value of Object.values(this.listeners) as unknown[][]) {
-      sum += value.length;
-    }
-    return sum;
+  listenerCount<Event extends keyof T>(event: Event): number {
+    return this.eventemitter.listenerCount(event as string);
   }
 
   emit<Event extends keyof T>(event: Event, value: T[Event]) {
-    const listeners = this.listeners[event];
-
-    if (listeners) {
-      listeners.forEach(listener => listener(value));
-    }
+    this.eventemitter.emit(event as string, value);
   }
 
   addListener<Event extends keyof T>(
     event: Event,
     onChange: Listener<T, Event>
   ) {
-    let listeners = this.listeners[event];
-
-    if (!listeners) {
-      listeners = [];
-      this.listeners[event] = listeners;
-    }
-
-    listeners.push(onChange) - 1;
-
+    this.eventemitter.addListener(event as string, onChange);
     return () => this.removeListener(event, onChange);
   }
 
@@ -45,20 +27,11 @@ export class EventEmitter<T extends object> {
     event: Event,
     onChange: Listener<T, Event>
   ) {
-    let listeners = this.listeners[event];
-    if (listeners) {
-      const index = listeners.indexOf(onChange);
-      if (index < 0) return;
-      listeners.splice(index, 1);
-    }
+    this.eventemitter.removeListener(event as string, onChange);
   }
 
   once<Event extends keyof T>(event: Event, fn: Listener<T, Event>) {
-    const onChange: Listener<T, Event> = value => {
-      fn(value);
-      this.removeListener(event, onChange);
-    };
-    this.addListener(event, onChange);
+    this.eventemitter.once(event as string, fn);
   }
 
   waitFor<Event extends keyof T>(event: Event) {

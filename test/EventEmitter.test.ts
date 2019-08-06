@@ -7,7 +7,7 @@ test('wait for one', async () => {
   const waiter = ee.waitFor('hello');
   ee.emit('hello', 'world');
   expect(await waiter).toBe('world');
-  expect(ee.countListeners()).toBe(0);
+  expect(ee.listenerCount('hello')).toBe(0);
 });
 
 test('accepts async functions', done => {
