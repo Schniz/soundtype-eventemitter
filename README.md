@@ -1,11 +1,11 @@
-# `eventemitter.ts`
+# `@soundtype/eventemitter`
 
 A typesafe event emitter for TypeScript
 
 ## Usage
 
 ```ts
-import { EventEmitter } from 'eventemitter.ts';
+import { EventEmitter } from '@soundtype/eventemitter';
 
 const ee = new EventEmitter<{ someString: string; someNumber: number }>();
 
