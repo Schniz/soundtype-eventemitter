@@ -4,37 +4,95 @@ type Listener<T, Event extends keyof T> = (
   value: T[Event]
 ) => void | Promise<void>;
 
-export class EventEmitter<T extends { [key: string]: any }> {
+/**
+ * A type-safe event emitter.
+ *
+ * The EventTypes generics is in the form of `{ eventName: EventType }`.
+ *
+ * @example
+ * ```ts
+ * const ee = new EventEmitter<{ str: string; num: number }>();
+ * ee.emit('str', 'this can only send strings');
+ * ee.emit('num', 'this will fail, because it expects a number');
+ *
+ * ee.once('str', str => {
+ *   // typescript infers that str is a string
+ * });
+ * ```
+ */
+export class EventEmitter<EventTypes extends { [eventName: string]: any }> {
   private readonly eventemitter = new NativeEventEmitter();
 
-  listenerCount<Event extends keyof T>(event: Event): number {
+  /**
+   * Check the listener count of a specific event
+   *
+   * @param event The event name
+   */
+  listenerCount<Event extends keyof EventTypes>(event: Event): number {
     return this.eventemitter.listenerCount(event as string);
   }
 
-  emit<Event extends keyof T>(event: Event, value: T[Event]) {
+  /**
+   * Emit a value to a specific event
+   *
+   * @param event The event name
+   * @param value The value to emit
+   */
+  emit<Event extends keyof EventTypes>(
+    event: Event,
+    value: EventTypes[Event]
+  ): void {
     this.eventemitter.emit(event as string, value);
   }
 
-  addListener<Event extends keyof T>(
+  /**
+   * Add a listener to a specific event. Don't forget to unsubscribe from it!
+   *
+   * @param event The event name
+   * @param listener A listener functino
+   */
+  addListener<Event extends keyof EventTypes>(
     event: Event,
-    onChange: Listener<T, Event>
-  ) {
-    this.eventemitter.addListener(event as string, onChange);
-    return () => this.removeListener(event, onChange);
+    listener: Listener<EventTypes, Event>
+  ): () => void {
+    this.eventemitter.addListener(event as string, listener);
+    return () => this.removeListener(event, listener);
   }
 
-  removeListener<Event extends keyof T>(
+  /**
+   * Removes the provided listener from the provided event
+   *
+   * @param event The event name
+   * @param listener A listener function
+   */
+  removeListener<Event extends keyof EventTypes>(
     event: Event,
-    onChange: Listener<T, Event>
-  ) {
-    this.eventemitter.removeListener(event as string, onChange);
+    listener: Listener<EventTypes, Event>
+  ): void {
+    this.eventemitter.removeListener(event as string, listener);
   }
 
-  once<Event extends keyof T>(event: Event, fn: Listener<T, Event>) {
+  /**
+   * Apply a function once for the next value
+   *
+   * @param event The event name
+   * @param fn The function to apply once
+   */
+  once<Event extends keyof EventTypes>(
+    event: Event,
+    fn: Listener<EventTypes, Event>
+  ): void {
     this.eventemitter.once(event as string, fn);
   }
 
-  waitFor<Event extends keyof T>(event: Event) {
-    return new Promise<T[Event]>(resolve => this.once(event, resolve));
+  /**
+   * Wait for the next value of the provided event
+   *
+   * @param event The event name
+   */
+  waitFor<Event extends keyof EventTypes>(
+    event: Event
+  ): Promise<EventTypes[Event]> {
+    return new Promise<EventTypes[Event]>(resolve => this.once(event, resolve));
   }
 }
